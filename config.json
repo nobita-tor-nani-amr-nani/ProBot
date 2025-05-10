@@ -1,22 +1,22 @@
 {
-  "owner": "Dip To",
-  "fb_ID":"ADD_YOUR_FACEBOOK_ID",
-  "adminName": "Dip To",
-  "botName": "Your Baby",
-  "token": "ADD_YOUR_BOT_TOKEN_HERE",
+  "owner": "Xrotick",
+  "fb_ID":"100057041031881",
+  "adminName": "Xrotick",
+  "botName": "HINATA_BOT",
+  "token": "7930714429:AAEqwyllr3j2WPGEAiijKxfdNPpb9OaWt-U",
 "mongodbURI":"mongodb+srv://userg4185:zWfR3c1ez5zpAUj0@cluster0.mfbe2.mongodb.net/botbee?retryWrites=true&w=majority&appName=Cluster0",
   "notes":"ADD_YOUR_MONGO_DB_URI for fast response. and if you don't know how to collect mongo uri then see this For database. MongooDB uri => https://drive.google.com/file/d/10AxcIiFQuI9S2gMBwV_i4U8UogMJX8pD/view?usp=drivesdk",
-  "prefix": "!",
-  "api": "https://www.noobs-api.000.pe/dipto",
+  "prefix": "/",
+  "api": "https://www.noobs-api.top/dipto",
   "database": {
     "mongo": true,
     "json": false
   },
   "adminBot": [
-    6242891290
+    6977764677
   ],
   "botOperator": [
-    6242891290
+    6977764677
   ],
   "inbox": true,
   "white_list_group": {
