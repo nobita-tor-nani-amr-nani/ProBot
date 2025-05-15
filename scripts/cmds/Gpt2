@@ -1,0 +1,123 @@
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+
+module.exports.config = {
+  name: "gpt2",
+  version: "2.1",
+  aliases: ["gemini2", "ai2"],
+  author: "Shikaki",
+  countDown: 5,
+  role: 0,
+  description: "Chat with the Gemini model via Blackbox API",
+  category: "chat-ai",
+  guide: "{pn} <your message> — Ask Gemini a question\n{pn} clear — Clear chat history"
+};
+
+module.exports.run = async ({ api, args, event, commandName, message }) => {
+  const content = args.join(" ").trim();
+  if (!content) return message.reply("Please provide a question for Gemini.");
+
+  if (content.toLowerCase() === "clear") {
+    return message.reply("Chat history cleared!");
+  }
+
+  const apiUrl = `https://hazeyyyy-rest-apis.onrender.com/api/gemini?question=${encodeURIComponent(content)}`;
+
+  try {
+    await message.react("⌛");
+
+    const { data } = await axios.get(apiUrl);
+    const replyText = data?.gemini || "⚠️ No response received from Gemini API.";
+
+    const imageUrls = [
+      ...(Array.isArray(data.web_images) ? data.web_images : []),
+      ...(typeof data.generated_image === "string" ? [data.generated_image] : (data.generated_image || []))
+    ];
+
+    const attachments = await downloadImages(imageUrls);
+
+    const msg = await message.reply(replyText, {
+      attachment: attachments,
+    });
+
+    global.functions.reply.set(msg.message_id, {
+      commandName,
+      messageID: msg.message_id,
+      author: event.sender_id,
+    });
+
+  } catch (err) {
+    console.error("Gemini API error:", err.message);
+    return message.reply("❌ Error: " + err.message);
+  }
+};
+
+module.exports.reply = async ({ event, api, Reply, args, message }) => {
+  if (event.sender_id !== Reply.author) return;
+
+  const prompt = args.join(" ").trim();
+  if (!prompt) return message.reply("Please provide a question.");
+
+  if (prompt.toLowerCase() === "clear") {
+    return message.reply("Chat history cleared!");
+  }
+
+  const apiUrl = `https://hazeyyyy-rest-apis.onrender.com/api/gemini?question=${encodeURIComponent(prompt)}`;
+
+  try {
+    await message.react("⌛");
+
+    const { data } = await axios.get(apiUrl);
+    const replyText = data?.gemini || "⚠️ No response received from Gemini API.";
+
+    const imageUrls = [
+      ...(Array.isArray(data.web_images) ? data.web_images : []),
+      ...(typeof data.generated_image === "string" ? [data.generated_image] : (data.generated_image || []))
+    ];
+
+    const attachments = await downloadImages(imageUrls);
+
+    const msg = await message.reply(replyText, {
+      attachment: attachments,
+    });
+
+    global.functions.reply.set(msg.message_id, {
+      commandName: Reply.commandName,
+      messageID: msg.message_id,
+      author: event.sender_id,
+    });
+
+  } catch (err) {
+    console.error("Gemini API error:", err.message);
+    return message.reply("❌ Error: " + err.message);
+  }
+};
+
+// Helper to download image streams
+async function downloadImages(urls) {
+  const imageBuffers = [];
+  const cacheDir = path.join(__dirname, "cache");
+  if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+
+  for (const url of urls.slice(0, 5)) {
+    try {
+      const res = await axios.get(url, { responseType: "arraybuffer" });
+      const buffer = Buffer.from(res.data, "binary");
+      const filename = `${uuidv4()}.jpg`;
+      const filepath = path.join(cacheDir, filename);
+      fs.writeFileSync(filepath, buffer);
+      imageBuffers.push(fs.createReadStream(filepath));
+
+      // Auto-delete after 60 seconds
+      setTimeout(() => {
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      }, 60000);
+    } catch (err) {
+      console.error("Image download failed:", err.message);
+    }
+  }
+
+  return imageBuffers;
+}
