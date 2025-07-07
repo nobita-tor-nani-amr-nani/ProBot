@@ -29,6 +29,8 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
   const { threadID, senderID, messageReply, body } = event;
   let userMessage = args.join(" ").trim();
 
+  const API_URL = "https://gemini-api-protick.onrender.com/chat";
+
   if (!userMessage) {
     return message.reply("Please type 'on' to enable auto-reply or ask me something!");
   }
@@ -43,8 +45,6 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
     chatHistories[senderID] = [];
     return message.reply("Auto-reply mode is now [OFF]. Talk to you later!");
   }
-
-  if (!autoReplyEnabled[senderID] && !body.toLowerCase().startsWith("pori")) return;
 
   if (!chatHistories[senderID]) {
     chatHistories[senderID] = [];
@@ -65,15 +65,13 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
   const fullConversation = chatHistories[senderID].join("\n");
   const prompt = `Tomar name pori. Tumi onk cute akta girlfriend tumi sobar sathey friendly abong asole gf er motoy tumi sob somoy banglish bolbe abong respect dibe. Tomake baniyeche protck tar Facebook id https://facebook.com/protick.mrc". 1–2 lines er besi replay dibe na . akhon conversation soro koro :\n\n${fullConversation}`;
 
-  const API_URL = "https://gemini-api-protick.onrender.com/chat";
-
   try {
     await message.react("⌛");
 
     const res = await axios.get(`${API_URL}?message=${encodeURIComponent(prompt)}`);
     const botReply = res.data.reply || "Hmm... I'm not sure how to reply to that!";
 
-    chatHistories[senderID].push(botReply);
+    chatHistories[senderID].push(`Pori: ${botReply}`);
 
     const msg = await message.reply(botReply);
     await message.react("✅");
@@ -85,7 +83,7 @@ module.exports.run = async ({ api, args, event, commandName, message }) => {
     });
 
   } catch (err) {
-    console.log("Error:", err);
+    console.log("Pori AI Error:", err);
     await message.react("❌");
     return message.reply("Oops! Something went wrong. Try again later.");
   }
@@ -110,7 +108,7 @@ module.exports.reply = async ({ event, api, Reply, args, message }) => {
   }
 
   const fullConversation = chatHistories[senderID].join("\n");
-  const prompt = `Tomar name pori. Tumi onk cute akta girlfriend tumi sobar sathey friendly abong asole gf er motoy tumi sob somoy banglish bolbe abong respect dibe. Tomake baniyeche protck tar Facebook id https://facebook.com/protick.mrc". 1–2 lines er besi replay dibe na . akhon conversation soro koro :\n\n${fullConversation}`;
+  const prompt = `Tomar name pori. Tumi onk cute akta girlfriend tumi sob somoy banglish bolbe abong respect dibe. Tomake baniyeche protck tar Facebook id https://facebook.com/protick.mrc". 1–2 lines er besi replay dibe na . akhon conversation soro koro :\n\n${fullConversation}`;
 
   try {
     await message.react("⌛");
@@ -118,7 +116,7 @@ module.exports.reply = async ({ event, api, Reply, args, message }) => {
     const res = await axios.get(`${API_URL}?message=${encodeURIComponent(prompt)}`);
     const botReply = res.data.reply || "Hmm... I'm not sure how to reply to that!";
 
-    chatHistories[senderID].push(botReply);
+    chatHistories[senderID].push(`Pori: ${botReply}`);
 
     const msg = await message.reply(botReply);
     await message.react("✅");
@@ -130,13 +128,30 @@ module.exports.reply = async ({ event, api, Reply, args, message }) => {
     });
 
   } catch (err) {
-    console.log("Error:", err);
+    console.log("Pori AI Error:", err);
     await message.react("❌");
     return message.reply("Oops! Something went wrong. Try again later.");
   }
 };
 
-// Helper to download image streams (kept for consistency with code2 format)
+// Auto-reply functionality for when users mention the bot or reply to it
+module.exports.onChat = async ({ event, message, api }) => {
+  const { senderID, body } = event;
+
+  // Only respond if auto-reply is enabled for this user
+  if (!autoReplyEnabled[senderID]) return;
+
+  // Check if message mentions pori or is a reply to bot
+  const isReplyToBot = event.messageReply && event.messageReply.senderID === api.getCurrentUserID();
+  const mentionsPori = body && body.toLowerCase().includes('pori');
+
+  if (isReplyToBot || mentionsPori) {
+    const args = body ? body.split(" ") : [];
+    await this.run({ api, args, event, commandName: 'pori', message });
+  }
+};
+
+// Helper function for image downloads (kept for consistency)
 async function downloadImages(urls) {
   const imageBuffers = [];
   const cacheDir = path.join(__dirname, "cache");
